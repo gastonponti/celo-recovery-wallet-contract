@@ -1,0 +1,21 @@
+{
+  "name": "recovery_wallet_contract",
+  "version": "0.0.1",
+  "description": "Recovereable wallet from users concensus",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Gaston Ponti <pontigaston@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@celo/contractkit": "0.4.14",
+    "@celo/utils": "0.1.20",
+    "openzeppelin-solidity": "^2.5.0",
+    "web3": "1.2.6"
+  },
+  "repository": "git@github.com:gastonponti/celo-recovery-wallet-contract.git"
+}
