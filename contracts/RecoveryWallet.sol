@@ -20,6 +20,15 @@ contract RecoveryWallet {
     address owner;
     mapping(bytes4 => uint) reqs;
 
+    // modifiers
+    modifier onlyOwner {
+        require(
+            msg.sender == owner,
+            "Only owner can call this function."
+        );
+        _;
+    }
+
     constructor(
         address[] memory _admins,
         address _owner,
@@ -33,4 +42,10 @@ contract RecoveryWallet {
         }
     }
 
+    function transfer(address payable to, uint amount) external onlyOwner {
+        if (address(this).balance < amount) {
+            revert();
+        }
+        to.transfer(amount);
+    }
 }

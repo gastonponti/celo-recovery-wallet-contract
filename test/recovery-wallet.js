@@ -25,8 +25,8 @@ contract('RecoveryWallet', (accounts) => {
   })
 
   describe('#transfer', () => {
-    it('should allow the owner to transfer CELO', async () => {
-      assert(wallet !== null)
+    it('should revert if the owner tries to transfer more than the wallet has', async () => {
+      assertRevert(wallet.transfer(accounts[2], 100))
     })
   })
 })
