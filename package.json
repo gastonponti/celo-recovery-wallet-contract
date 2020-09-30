@@ -7,14 +7,22 @@
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "yarn run truffle compile",
+    "lint-solidity": "yarn run solhint contracts/*",
+    "test": "yarn run truffle test",
+    "migrate": "yarn run truffle migrate --network testnet"
   },
   "author": "Gaston Ponti <pontigaston@gmail.com>",
   "license": "ISC",
   "dependencies": {
     "@celo/contractkit": "0.4.14",
     "@celo/utils": "0.1.20",
+    "ganache-cli": "^6.11.0",
+    "mocha": "^5.1.1",
     "openzeppelin-solidity": "^2.5.0",
+    "solhint": "^3.2.1",
+    "truffle": "^5.1.46",
+    "@celo/typechain": "git+ssh://git@github.com:celo-org/TypeChain.git#ebcd5b4",
     "web3": "1.2.6"
   },
   "repository": "git@github.com:gastonponti/celo-recovery-wallet-contract.git"
