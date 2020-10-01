@@ -8,44 +8,31 @@ contract RecoveryWallet {
 
     using SafeMath for uint256;
 
-    // Events
-    // TODO
-
-    // bytes4 constants for each method that can be called in a proposal
-    // This will allow us to examine a proposed transaction and identify which method it calls,
-    // so that we can then lookup in `req` how many approvals are required
-    bytes4 private constant SET_OWNER_BYTES4 = bytes4("");
-    bytes4 private constant SET_ADMINS_BYTES4 = bytes4("");
-
-    uint constant YES = 1;
-    uint constant NO = 0;
-
-    // Storage
-    uint nAdmins;
-    mapping(address => bool) isAdmin;
-    address owner;
-
-    uint proposalCounter = 1;
-    mapping(uint => Proposal) proposals;
-    mapping(bytes4 => uint) reqs;
+    // events
+    event NewProposal(uint id, address target, uint value, bytes data, address proposer);
+    event SetOwnerProposed(uint id, address newOwner);
+    event Vote(uint proposalId, bool approve, address admin);
+    event Approved(uint proposalId);
+    event Executed(uint proposalId);
+    event NewOwner(uint owner);
 
     // Types
     struct Proposal {
-        uint id;
+        address target;
+        uint value;
         bytes data;
-//        mapping(address => uint) votes;
-        uint yesVotes;
-        uint noVotes;
-        uint req;
+        mapping(address => bool) votes;
+        uint total;
     }
 
-    struct Transaction {
-        address destination;
-        uint256 value;
-        bytes date;
-    }
+    // Storage
+    uint public nAdmins;
+    mapping(address => bool) public isAdmin;
+    uint public quorum;
+    address public owner;
 
-    // TODO: events
+    uint proposalCounter = 1;
+    mapping(uint => Proposal) proposals;
 
     // modifiers
     modifier onlyOwner {
@@ -72,23 +59,34 @@ contract RecoveryWallet {
         _;
     }
 
+    modifier onlyOwnerOrAdminOrWallet {
+        require(
+            msg.sender == owner || isAdmin[msg.sender] || msg.sender == address(this),
+            "Only owner and admins and the wallet can call this function."
+        );
+        _;
+    }
+
+    modifier onlyWallet {
+        require(msg.sender == address(this), "Only the wallet itself can call this function");
+        _;
+    }
+
     // functions
     constructor(
         address[] memory _admins,
         address _owner,
-        uint _reqForSetAdmins,
-        uint _reqForSetOwner
+        uint _quorum
     ) public {
+        owner = _owner;
         nAdmins = _admins.length;
+        quorum = _quorum;
         for (uint i = 0; i < _admins.length; i++) {
             isAdmin[_admins[i]] = true;
-            owner = _owner;
-            reqs[SET_OWNER_BYTES4] = _reqForSetOwner;
-            reqs[SET_ADMINS_BYTES4] = _reqForSetAdmins;
         }
     }
 
-    function transfer(address payable to, uint amount) external onlyOwner {
+    function transferCelo(address payable to, uint amount) external onlyOwner {
         if (address(this).balance < amount) {
             revert();
         }
@@ -101,25 +99,47 @@ contract RecoveryWallet {
         return address(this).balance;
     }
 
-    function propose(bytes calldata _data) external onlyOwnerOrAdmin {
-        bytes4 sig = abi.decode(_data[:4], (bytes4));
-        uint req = reqs[sig];
-        if (req == 0) {
-            revert();
-        }
+    function propose(address _target, uint _value, bytes calldata _data) external onlyOwnerOrAdminOrWallet returns (uint) {
         uint id = proposalCounter;
         proposalCounter++;
         proposals[id] = Proposal({
-            id: id,
+            target: _target,
+            value: _value,
             data: _data,
-//            votes: {},
-            yesVotes: 0,
-            noVotes: 0,
-            req: req
+            total: 0
         });
+        emit NewProposal(id, _target, _value, _data, msg.sender);
+        return id;
     }
 
-    function vote(uint id, uint vote) external onlyAdmin {
+    function vote(uint id, bool approve) external onlyAdmin {
+        bool curr = proposals[id].votes[msg.sender];
+        if (approve != curr) {
+            proposals[id].votes[msg.sender] = true;
+            if (approve) {
+                proposals[id].total += 1;
+            } else {
+                proposals[id].total -= 1;
+            }
+        }
+        emit Vote(id, approve, msg.sender);
+    }
 
+    function execute(uint id) external onlyOwnerOrAdmin {
+        if (proposals[id].total >= quorum) {
+            address(proposals[id].target).call.value(proposals[id].value)(proposals[id].data);
+        } else {
+            revert("The proposal hasn't reached a quorum of admins, so it cannot be executed");
+        }
+    }
+
+    function proposeSetOwner(address newOwner) external onlyOwnerOrAdmin returns (uint) {
+        bytes memory data = abi.encodeWithSignature("setOwner(address)", newOwner);
+        uint id = this.propose(address(this), 0, data);
+        emit SetOwnerProposed(id, msg.sender);
+    }
+
+    function setOwner(address newOwner) public onlyWallet {
+        owner = newOwner;
     }
 }

@@ -21,6 +21,12 @@ async function assertBalance(address, amount) {
 }
 
 contract('RecoveryWallet', (accounts) => {
+  async function assertOwner(owner) {
+    const realOwner = await wallet.owner();
+    // console.log("OWNER IS", realOwner)
+    assert(owner === realOwner, `Expected owner to be ${owner}, but it was ${realOwner}`)
+  }
+
   // Truffle sends transactions from accounts[0] unless otherwise directed.
   let wallet
   let owner = accounts[1]
@@ -29,18 +35,18 @@ contract('RecoveryWallet', (accounts) => {
 
   beforeEach(async () => {
     // Deploy a new instance of BootnodeCoin to the network.
-    wallet = await RecoveryWallet.new(accounts.slice(2,5), accounts[1], 2, 2)
+    wallet = await RecoveryWallet.new(accounts.slice(2,5), accounts[1], 2)
   })
 
   describe('#transfer', () => {
     it('should revert if the owner tries to transfer more than the wallet has', async () => {
-      assertRevert(wallet.transfer(accounts[2], 100, {from: accounts[1]}))
+      assertRevert(wallet.transferCelo(accounts[2], 100, {from: accounts[1]}))
     })
 
     it('should transfer if the owner asks it it', async () => {
       await wallet.send("100000")
       await assertBalance(wallet.address, "100000")
-      await wallet.transfer(otherAccount.address, "40000", {from: accounts[1]})
+      await wallet.transferCelo(otherAccount.address, "40000", {from: accounts[1]})
       await assertBalance(wallet.address, "60000")
       await assertBalance(otherAccount.address, "40000")
     })
@@ -48,7 +54,20 @@ contract('RecoveryWallet', (accounts) => {
     it('should revert if someonelse else asks it it', async () => {
       await wallet.send("100000")
       await assertBalance(wallet.address, "100000")
-      assertRevert(wallet.transfer(otherAccount.address, "40000", {from: accounts[2]}))
+      assertRevert(wallet.transferCelo(otherAccount.address, "40000", {from: accounts[2]}))
+    })
+  })
+
+  describe('#setOwner', () => {
+    it('should be proposable, votable, executable, and should work', async () => {
+      await wallet.proposeSetOwner(accounts[8], {from: accounts[1]})
+      await assertOwner(accounts[1])
+      await wallet.vote(1, true, {from: accounts[2]})
+      assertRevert(wallet.execute(1, {from: accounts[3]}))
+      await wallet.vote(1, true, {from: accounts[3]})
+      await assertOwner(accounts[1])
+      await wallet.execute(1, {from: accounts[3]})
+      await assertOwner(accounts[8])
     })
   })
 })
