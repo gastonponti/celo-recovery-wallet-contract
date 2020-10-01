@@ -1,4 +1,5 @@
-pragma solidity ^0.5.15;
+pragma solidity ^0.6.0;
+pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -16,13 +17,35 @@ contract RecoveryWallet {
     bytes4 private constant SET_OWNER_BYTES4 = bytes4("");
     bytes4 private constant SET_ADMINS_BYTES4 = bytes4("");
 
+    uint constant YES = 1;
+    uint constant NO = 0;
+
     // Storage
     uint nAdmins;
     mapping(address => bool) isAdmin;
     address owner;
-    mapping(bytes4 => uint) reqs;
-    uint proposalCounter = 1;
 
+    uint proposalCounter = 1;
+    mapping(uint => Proposal) proposals;
+    mapping(bytes4 => uint) reqs;
+
+    // Types
+    struct Proposal {
+        uint id;
+        bytes data;
+//        mapping(address => uint) votes;
+        uint yesVotes;
+        uint noVotes;
+        uint req;
+    }
+
+    struct Transaction {
+        address destination;
+        uint256 value;
+        bytes date;
+    }
+
+    // TODO: events
 
     // modifiers
     modifier onlyOwner {
@@ -33,6 +56,23 @@ contract RecoveryWallet {
         _;
     }
 
+    modifier onlyAdmin {
+        require(
+            isAdmin[msg.sender],
+            "Only admins can call this function."
+        );
+        _;
+    }
+
+    modifier onlyOwnerOrAdmin {
+        require(
+            msg.sender == owner || isAdmin[msg.sender],
+            "Only owner and admins can call this function."
+        );
+        _;
+    }
+
+    // functions
     constructor(
         address[] memory _admins,
         address _owner,
@@ -55,9 +95,31 @@ contract RecoveryWallet {
         to.transfer(amount);
     }
 
-    function () external payable {}
+    fallback () external payable {}
 
     function getBalance() public view returns (uint res) {
         return address(this).balance;
+    }
+
+    function propose(bytes calldata _data) external onlyOwnerOrAdmin {
+        bytes4 sig = abi.decode(_data[:4], (bytes4));
+        uint req = reqs[sig];
+        if (req == 0) {
+            revert();
+        }
+        uint id = proposalCounter;
+        proposalCounter++;
+        proposals[id] = Proposal({
+            id: id,
+            data: _data,
+//            votes: {},
+            yesVotes: 0,
+            noVotes: 0,
+            req: req
+        });
+    }
+
+    function vote(uint id, uint vote) external onlyAdmin {
+
     }
 }

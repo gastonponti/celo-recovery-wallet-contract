@@ -19,7 +19,7 @@
     "@celo/utils": "0.1.20",
     "ganache-cli": "^6.11.0",
     "mocha": "^5.1.1",
-    "openzeppelin-solidity": "^2.5.0",
+    "openzeppelin-solidity": "^3.2.0",
     "solhint": "^3.2.1",
     "truffle": "^5.1.46",
     "@celo/typechain": "git+ssh://git@github.com:celo-org/TypeChain.git#ebcd5b4",
