@@ -1,0 +1,9 @@
+{
+  "extends": "default",
+  "rules": {
+    "compiler-fixed": false,
+    "function-max-lines": 70,
+    "indent": ["warn", 2],
+    "max-line-length": ["error", 100]
+  }
+}

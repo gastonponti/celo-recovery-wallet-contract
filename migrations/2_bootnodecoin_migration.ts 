@@ -1,0 +1,6 @@
+const BootnodeCoin: any = artifacts.require('BootnodeCoin')
+
+module.exports = (_deployer: any, _network: any, _accounts: string[]) => {
+  // 1. Deploy BootnodeCoin
+  deployer.deploy(BootnodeCoin, 'BootnodeCoin', 'BnC')
+}

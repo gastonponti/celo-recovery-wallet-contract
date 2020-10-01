@@ -1,0 +1,19 @@
+{
+  "extends": ["tslint:latest", "tslint-react", "tslint-config-prettier"],
+  "rules": {
+    "member-access": false,
+    "no-implicit-dependencies": false,
+    "interface-name": false,
+    "no-submodule-imports": false,
+    "object-literal-sort-keys": false,
+    "one-variable-per-declaration": false,
+    "no-var-requires": false,
+    "no-console": [true, "log"],
+    "variable-name": {
+      "options": ["allow-leading-underscore", "allow-pascal-case"]
+    }
+  },
+  "linterOptions": {
+    "include": ["**/*.ts"]
+  }
+}
