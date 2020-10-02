@@ -29,8 +29,7 @@ contract RecoveryWallet {
         address target;
         uint256 value;
         bytes data;
-        mapping(address => bool) votes;
-        uint256 total;
+        EnumerableSet.AddressSet votes;
     }
 
     struct Token {
@@ -122,20 +121,19 @@ contract RecoveryWallet {
     }
 
     function vote(uint256 id, bool approve) external onlyAdmin {
-        bool curr = proposals[id].votes[msg.sender];
+        bool curr = proposals[id].votes.contains(msg.sender);
         if (approve != curr) {
-            proposals[id].votes[msg.sender] = true;
             if (approve) {
-                proposals[id].total += 1;
+                proposals[id].votes.add(msg.sender);
             } else {
-                proposals[id].total -= 1;
+                proposals[id].votes.remove(msg.sender);
             }
         }
         emit Vote(id, approve, msg.sender);
     }
 
     function execute(uint256 _id) external onlyOwnerOrAdmin {
-        if (proposals[_id].total >= quorum) {
+        if (proposals[_id].length >= quorum) {
             (bool success,) = address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
             if (!success) {
                 revert("Proposal execution reverted");
