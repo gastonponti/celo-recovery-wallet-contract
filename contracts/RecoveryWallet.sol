@@ -11,6 +11,7 @@ contract RecoveryWallet {
     // events
     event NewProposal(uint id, address target, uint value, bytes data, address proposer);
     event SetOwnerProposed(uint id, address newOwner);
+    event InvokeProposed(uint id);
     event Vote(uint proposalId, bool approve, address admin);
     event Approved(uint proposalId);
     event Executed(uint proposalId);
@@ -99,7 +100,7 @@ contract RecoveryWallet {
         return address(this).balance;
     }
 
-    function propose(address _target, uint _value, bytes calldata _data) external onlyOwnerOrAdminOrWallet returns (uint) {
+    function propose(address _target, uint _value, bytes calldata _data) external onlyWallet returns (uint) {
         uint id = proposalCounter;
         proposalCounter++;
         proposals[id] = Proposal({
@@ -133,7 +134,7 @@ contract RecoveryWallet {
         }
     }
 
-    function proposeSetOwner(address newOwner) external onlyOwnerOrAdmin returns (uint) {
+    function proposeSetOwner(address newOwner) external onlyOwnerOrAdmin {
         bytes memory data = abi.encodeWithSignature("setOwner(address)", newOwner);
         uint id = this.propose(address(this), 0, data);
         emit SetOwnerProposed(id, msg.sender);
@@ -141,5 +142,10 @@ contract RecoveryWallet {
 
     function setOwner(address newOwner) public onlyWallet {
         owner = newOwner;
+    }
+
+    function proposeInvoke(address target, uint value, bytes data) external onlyOwner {
+        uint id = this.propose(target, value, data);
+        InvokeProposed(id)
     }
 }
