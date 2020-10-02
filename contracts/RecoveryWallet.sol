@@ -132,13 +132,13 @@ contract RecoveryWallet {
     }
 
     function execute(uint256 _id) external onlyOwnerOrAdmin {
-        if (proposals[_id].votes.length() >= quorum) {
-            (bool success,) = address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
-            if (!success) {
-                revert("Proposal execution reverted");
-            }
-        } else {
-            revert("The proposal hasn't reached a quorum of admins, so it cannot be executed");
+        require(
+            proposals[_id].votes.length() >= quorum,
+            "The proposal hasn't reached a quorum of admins, so it cannot be executed"
+        );
+        (bool success,) = address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
+        if (!success) {
+            revert("Proposal execution reverted");
         }
     }
 
