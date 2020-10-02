@@ -33,11 +33,15 @@ contract('RecoveryWallet', (accounts) => {
   let wallet
   let owner = accounts[1]
   let admins = accounts.slice(2, 5)
-  const otherAccount = web3.eth.accounts.create()
+  let exampleToken;
+  let tokenAddr;
 
   beforeEach(async () => {
     // Deploy a new instance of BootnodeCoin to the network.
     wallet = await RecoveryWallet.new(accounts.slice(2,5), accounts[1], 2)
+    exampleToken = await ExampleToken.new();
+    tokenAddr = exampleToken.address;
+    await exampleToken.mint(100, {from: accounts[0]});
   })
 
   describe('#setOwner', () => {
@@ -55,7 +59,6 @@ contract('RecoveryWallet', (accounts) => {
 
   describe('#invoke', () => {
     it("should revert if the underlying transaction reverts", async () => {
-      const exampleToken = await ExampleToken.new();
       const badCallData = web3.eth.abi.encodeFunctionCall({
         name: 'transfer',
         type: 'function',
@@ -75,14 +78,6 @@ contract('RecoveryWallet', (accounts) => {
   })
 
   describe('#tokens', () => {
-    let exampleToken;
-    let tokenAddr;
-    beforeEach(async () => {
-      exampleToken = await ExampleToken.new();
-      tokenAddr = exampleToken.address;
-      await exampleToken.mint(100, {from: accounts[0]});
-    })
-
     async function addTheToken() {
       await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
       await wallet.vote(1, true, {from: accounts[2]})
@@ -110,7 +105,6 @@ contract('RecoveryWallet', (accounts) => {
 
   describe('#proposals', () => {
     it('support changing your vote', async () => {
-      exampleToken = await ExampleToken.new();
       await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
       await wallet.vote(1, true, {from: accounts[2]})
       await wallet.vote(1, true, {from: accounts[3]})
