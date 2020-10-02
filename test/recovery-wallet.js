@@ -29,6 +29,13 @@ contract('RecoveryWallet', (accounts) => {
     assert(owner === realOwner, `Expected owner to be ${owner}, but it was ${realOwner}`)
   }
 
+  async function addTheToken() {
+    await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
+    await wallet.vote(1, true, {from: accounts[2]})
+    await wallet.vote(1, true, {from: accounts[3]})
+    await wallet.execute(1, {from: accounts[3]})
+  }
+
   // Truffle sends transactions from accounts[0] unless otherwise directed.
   let wallet
   let owner = accounts[1]
@@ -78,13 +85,6 @@ contract('RecoveryWallet', (accounts) => {
   })
 
   describe('#tokens', () => {
-    async function addTheToken() {
-      await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
-      await wallet.vote(1, true, {from: accounts[2]})
-      await wallet.vote(1, true, {from: accounts[3]})
-      await wallet.execute(1, {from: accounts[3]})
-    }
-
     it('can be added', async () => {
       await addTheToken()
       const tokenInfo = await wallet.tokens(exampleToken.address)
@@ -110,6 +110,27 @@ contract('RecoveryWallet', (accounts) => {
       await wallet.vote(1, true, {from: accounts[3]})
       await wallet.vote(1, false, {from: accounts[3]})
       await assertRevert(wallet.execute(1, {from: accounts[3]}))
+    })
+  })
+
+  describe('locking', () => {
+    beforeEach(async () => {
+      await addTheToken();
+    })
+
+    it('disables transfers, and be undone via a proposal', async () => {
+      await exampleToken.transfer(wallet.address, 90, {from: accounts[0]});
+      // transfer work initially
+      await wallet.transfer(exampleToken.address, accounts[8], 10, {from: accounts[1]})
+      // now we lock and they should not work
+      await wallet.lock({from: accounts[1]})
+      await assertRevert(wallet.transfer(exampleToken.address, accounts[8], 10, {from: accounts[1]}))
+      // now we unlock and they should work again
+      await wallet.proposeUnlock({from: accounts[1]})
+      await wallet.vote(2, true, {from: accounts[2]})
+      await wallet.vote(2, true, {from: accounts[3]})
+      await wallet.execute(2, {from: accounts[3]})
+      await wallet.transfer(exampleToken.address, accounts[8], 10, {from: accounts[1]})
     })
   })
 })

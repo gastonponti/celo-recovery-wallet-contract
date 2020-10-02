@@ -20,9 +20,12 @@ contract RecoveryWallet {
     event SetOwnerProposed(uint256 id, address newOwner);
     event InvokeProposed(uint256 id);
     event AddTokenProposed(uint256 id, address addr, uint256 limit);
+    event UnlockProposed(uint256 id);
 
     event NewOwner(uint256 owner);
     event NewToken(address addr, uint256 limit);
+    event Locked();
+    event Unlocked();
 
     // Types
     struct Proposal {
@@ -42,6 +45,7 @@ contract RecoveryWallet {
     EnumerableSet.AddressSet private admins;
     uint256 public quorum;
     address public owner;
+    bool public locked;
 
     uint256 proposalCounter = 1;
     mapping(uint256 => Proposal) private proposals;
@@ -100,6 +104,7 @@ contract RecoveryWallet {
     }
 
     function transfer(address _tokenAddr, address _to, uint256 _amount) external onlyOwner returns (bool) {
+        require(!locked, "The account is locked, so transfers are not possible");
         return IERC20(_tokenAddr).transfer(_to, _amount);
     }
 
@@ -150,6 +155,25 @@ contract RecoveryWallet {
 
     function setOwner(address _newOwner) public onlyWallet {
         owner = _newOwner;
+    }
+
+    /**
+     * Locks the wallet by disabling the transfer() function until unlocked via a proposal
+     * This is security feature allowing either the owner or any admin to quickly lock in case
+     * the owner's account seems to have been compromised.
+     */
+    function lock() external onlyOwnerOrAdmin {
+        locked = true;
+    }
+
+    function proposeUnlock() external onlyOwnerOrAdmin {
+        bytes memory data = abi.encodeWithSignature("unlock()");
+        uint256 id = this.propose(address(this), 0, data);
+        emit UnlockProposed(id);
+    }
+
+    function unlock() public onlyWallet {
+        locked = false;
     }
 
     function proposeInvoke(address _target, uint256 _value, bytes calldata _data) external onlyOwner {
