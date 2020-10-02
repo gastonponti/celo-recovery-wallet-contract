@@ -9,31 +9,43 @@ contract RecoveryWallet {
     using SafeMath for uint256;
 
     // events
-    event NewProposal(uint id, address target, uint value, bytes data, address proposer);
-    event SetOwnerProposed(uint id, address newOwner);
-    event InvokeProposed(uint id);
-    event Vote(uint proposalId, bool approve, address admin);
-    event Approved(uint proposalId);
-    event Executed(uint proposalId);
-    event NewOwner(uint owner);
+    event NewProposal(uint256 id, address target, uint256 value, bytes data, address proposer);
+    event Vote(uint256 proposalId, bool approve, address admin);
+    event Approved(uint256 proposalId);
+    event Executed(uint256 proposalId);
+
+    event SetOwnerProposed(uint256 id, address newOwner);
+    event InvokeProposed(uint256 id);
+    event AddTokenProposed(uint256 id, address addr, uint256 limit);
+
+    event NewOwner(uint256 owner);
+    event NewToken(address addr, uint256 limit);
 
     // Types
     struct Proposal {
         address target;
-        uint value;
+        uint256 value;
         bytes data;
         mapping(address => bool) votes;
-        uint total;
+        uint256 total;
+    }
+
+    struct Token {
+        uint256 limit;
+        uint256 used;
+        uint256 lastUsedAt;
     }
 
     // Storage
-    uint public nAdmins;
+    uint256 public nAdmins;
     mapping(address => bool) public isAdmin;
-    uint public quorum;
+    uint256 public quorum;
     address public owner;
 
-    uint proposalCounter = 1;
-    mapping(uint => Proposal) proposals;
+    uint256 proposalCounter = 1;
+    mapping(uint256 => Proposal) public proposals;
+
+    mapping(address => Token) public tokens;
 
     // modifiers
     modifier onlyOwner {
@@ -77,31 +89,36 @@ contract RecoveryWallet {
     constructor(
         address[] memory _admins,
         address _owner,
-        uint _quorum
+        uint256 _quorum
     ) public {
         owner = _owner;
         nAdmins = _admins.length;
         quorum = _quorum;
-        for (uint i = 0; i < _admins.length; i++) {
+        for (uint256 i = 0; i < _admins.length; i++) {
             isAdmin[_admins[i]] = true;
         }
     }
 
-    function transferCelo(address payable to, uint amount) external onlyOwner {
-        if (address(this).balance < amount) {
+    function transferCelo(address payable _to, uint256 _amount) external onlyOwner {
+        if (address(this).balance < _amount) {
             revert();
         }
-        to.transfer(amount);
+        _to.transfer(_amount);
+    }
+
+    function transferToken(address _tokenAddr, address _to, uint256 _amount) external onlyOwner {
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", _to, _amount);
+        _tokenAddr.call(data);
     }
 
     fallback () external payable {}
 
-    function getBalance() public view returns (uint res) {
+    function getBalance() public view returns (uint256 res) {
         return address(this).balance;
     }
 
-    function propose(address _target, uint _value, bytes calldata _data) external onlyWallet returns (uint) {
-        uint id = proposalCounter;
+    function propose(address _target, uint256 _value, bytes calldata _data) external onlyWallet returns (uint256) {
+        uint256 id = proposalCounter;
         proposalCounter++;
         proposals[id] = Proposal({
             target: _target,
@@ -113,7 +130,7 @@ contract RecoveryWallet {
         return id;
     }
 
-    function vote(uint id, bool approve) external onlyAdmin {
+    function vote(uint256 id, bool approve) external onlyAdmin {
         bool curr = proposals[id].votes[msg.sender];
         if (approve != curr) {
             proposals[id].votes[msg.sender] = true;
@@ -126,26 +143,42 @@ contract RecoveryWallet {
         emit Vote(id, approve, msg.sender);
     }
 
-    function execute(uint id) external onlyOwnerOrAdmin {
-        if (proposals[id].total >= quorum) {
-            address(proposals[id].target).call.value(proposals[id].value)(proposals[id].data);
+    function execute(uint256 _id) external onlyOwnerOrAdmin {
+        if (proposals[_id].total >= quorum) {
+            address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
         } else {
             revert("The proposal hasn't reached a quorum of admins, so it cannot be executed");
         }
     }
 
-    function proposeSetOwner(address newOwner) external onlyOwnerOrAdmin {
-        bytes memory data = abi.encodeWithSignature("setOwner(address)", newOwner);
-        uint id = this.propose(address(this), 0, data);
+    function proposeSetOwner(address _newOwner) external onlyOwnerOrAdmin {
+        bytes memory data = abi.encodeWithSignature("setOwner(address)", _newOwner);
+        uint256 id = this.propose(address(this), 0, data);
         emit SetOwnerProposed(id, msg.sender);
     }
 
-    function setOwner(address newOwner) public onlyWallet {
-        owner = newOwner;
+    function setOwner(address _newOwner) public onlyWallet {
+        owner = _newOwner;
     }
 
-    function proposeInvoke(address target, uint value, bytes data) external onlyOwner {
-        uint id = this.propose(target, value, data);
-        InvokeProposed(id)
+    function proposeInvoke(address _target, uint256 _value, bytes calldata _data) external onlyOwner {
+        uint256 id = this.propose(_target, _value, _data);
+        emit InvokeProposed(id);
+    }
+
+    function proposeAddToken(address _addr, uint256 _limit) external onlyOwner {
+        require(tokens[_addr].limit == 0, "A token cannot be added if it's already registered");
+        bytes memory data = abi.encodeWithSignature("addToken(address,uint256)", _addr, _limit);
+        uint256 id = this.propose(address(this), 0, data);
+        emit AddTokenProposed(id, _addr, _limit);
+    }
+
+    function addToken(address _addr, uint256 _limit) public onlyWallet {
+        tokens[_addr] = Token({
+            limit: _limit,
+            used: 0,
+            lastUsedAt: now
+        });
+        emit NewToken(_addr, _limit);
     }
 }
