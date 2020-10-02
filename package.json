@@ -16,6 +16,8 @@
     "migrate": "yarn run truffle migrate --network testnet"
   },
   "dependencies": {
+    "@celo/contractkit": "0.4.14",
+    "@celo/utils": "0.1.20",
     "eth-gas-reporter": "^0.1.2",
     "ganache-cli": "^6.1.0",
     "mocha": "^5.1.1",
