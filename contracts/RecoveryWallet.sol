@@ -44,7 +44,7 @@ contract RecoveryWallet {
     address public owner;
 
     uint256 proposalCounter = 1;
-    mapping(uint256 => Proposal) public proposals;
+    mapping(uint256 => Proposal) private proposals;
 
     mapping(address => Token) public tokens;
 
@@ -110,12 +110,11 @@ contract RecoveryWallet {
     function propose(address _target, uint256 _value, bytes calldata _data) external onlyWallet returns (uint256) {
         uint256 id = proposalCounter;
         proposalCounter++;
-        proposals[id] = Proposal({
-            target: _target,
-            value: _value,
-            data: _data,
-            total: 0
-        });
+        Proposal memory proposal;
+        proposal.target = _target;
+        proposal.value = _value;
+        proposal.data = _data;
+        proposals[id] = proposal;
         emit NewProposal(id, _target, _value, _data, msg.sender);
         return id;
     }
@@ -133,7 +132,7 @@ contract RecoveryWallet {
     }
 
     function execute(uint256 _id) external onlyOwnerOrAdmin {
-        if (proposals[_id].length >= quorum) {
+        if (proposals[_id].votes.length() >= quorum) {
             (bool success,) = address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
             if (!success) {
                 revert("Proposal execution reverted");

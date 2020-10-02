@@ -107,4 +107,15 @@ contract('RecoveryWallet', (accounts) => {
       await assertRevert(wallet.transfer(exampleToken.address, accounts[8], 100, {from: accounts[1]}))
     })
   })
+
+  describe('#proposals', () => {
+    it('support changing your vote', async () => {
+      exampleToken = await ExampleToken.new();
+      await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
+      await wallet.vote(1, true, {from: accounts[2]})
+      await wallet.vote(1, true, {from: accounts[3]})
+      await wallet.vote(1, false, {from: accounts[3]})
+      await assertRevert(wallet.execute(1, {from: accounts[3]}))
+    })
+  })
 })
