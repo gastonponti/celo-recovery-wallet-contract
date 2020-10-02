@@ -3,11 +3,13 @@ pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../node_modules/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "../node_modules/openzeppelin-solidity/contracts/utils/EnumerableSet.sol";
 
 
 contract RecoveryWallet {
 
     using SafeMath for uint256;
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     // events
     event NewProposal(uint256 id, address target, uint256 value, bytes data, address proposer);
@@ -38,8 +40,7 @@ contract RecoveryWallet {
     }
 
     // Storage
-    uint256 public nAdmins;
-    mapping(address => bool) public isAdmin;
+    EnumerableSet.AddressSet private admins;
     uint256 public quorum;
     address public owner;
 
@@ -59,7 +60,7 @@ contract RecoveryWallet {
 
     modifier onlyAdmin {
         require(
-            isAdmin[msg.sender],
+            admins.contains(msg.sender),
             "Only admins can call this function."
         );
         _;
@@ -67,7 +68,7 @@ contract RecoveryWallet {
 
     modifier onlyOwnerOrAdmin {
         require(
-            msg.sender == owner || isAdmin[msg.sender],
+            msg.sender == owner || admins.contains(msg.sender),
             "Only owner and admins can call this function."
         );
         _;
@@ -75,7 +76,7 @@ contract RecoveryWallet {
 
     modifier onlyOwnerOrAdminOrWallet {
         require(
-            msg.sender == owner || isAdmin[msg.sender] || msg.sender == address(this),
+            msg.sender == owner || admins.contains(msg.sender) || msg.sender == address(this),
             "Only owner and admins and the wallet can call this function."
         );
         _;
@@ -93,15 +94,14 @@ contract RecoveryWallet {
         uint256 _quorum
     ) public {
         owner = _owner;
-        nAdmins = _admins.length;
         quorum = _quorum;
         for (uint256 i = 0; i < _admins.length; i++) {
-            isAdmin[_admins[i]] = true;
+            admins.add(_admins[i]);
         }
     }
 
-    function transfer(address _tokenAddr, address _to, uint256 _amount) external onlyOwner {
-        IERC20(_tokenAddr).transfer(_to, _amount);
+    function transfer(address _tokenAddr, address _to, uint256 _amount) external onlyOwner returns (bool) {
+        return IERC20(_tokenAddr).transfer(_to, _amount);
     }
 
     function balance(address _tokenAddr) public view returns (uint256 res) {
@@ -136,7 +136,10 @@ contract RecoveryWallet {
 
     function execute(uint256 _id) external onlyOwnerOrAdmin {
         if (proposals[_id].total >= quorum) {
-            address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
+            (bool success,) = address(proposals[_id].target).call.value(proposals[_id].value)(proposals[_id].data);
+            if (!success) {
+                revert("Proposal execution reverted");
+            }
         } else {
             revert("The proposal hasn't reached a quorum of admins, so it cannot be executed");
         }

@@ -9,11 +9,12 @@ const ExampleToken = artifacts.require("./contracts/ExampleToken.sol")
 async function assertRevert(promise) {
   try {
     await promise
-    assert.fail('Expected revert not received')
   } catch (error) {
     const revertFound = error.message.search('revert') >= 0
     assert(revertFound, `Expected "revert", got ${error} instead`)
+    return
   }
+  assert.fail('Expected revert not received')
 }
 
 async function assertBalance(address, amount) {
@@ -52,6 +53,27 @@ contract('RecoveryWallet', (accounts) => {
     })
   })
 
+  describe('#invoke', () => {
+    it("should revert if the underlying transaction reverts", async () => {
+      const exampleToken = await ExampleToken.new();
+      const badCallData = web3.eth.abi.encodeFunctionCall({
+        name: 'transfer',
+        type: 'function',
+        inputs: [{
+            type: 'address',
+            name: '_to'
+        },{
+            type: 'uint256',
+            name: '_value'
+        }]
+      }, [accounts[8], 1000]);
+      await wallet.proposeInvoke(exampleToken.address, 0, badCallData, {from: accounts[1]});
+      await wallet.vote(1, true, {from: accounts[2]})
+      await wallet.vote(1, true, {from: accounts[3]})
+      await assertRevert(wallet.execute(1, {from: accounts[3]}))
+    })
+  })
+
   describe('#tokens', () => {
     let exampleToken;
     let tokenAddr;
@@ -82,7 +104,7 @@ contract('RecoveryWallet', (accounts) => {
       assert((await wallet.balance(tokenAddr)).toNumber() == 80)
       assert((await exampleToken.balanceOf(accounts[8])).toNumber() == 10)
       // not enough funds, so will revert
-      await assertRevert(wallet.transfer(exampleToken.address, accounts[8], 90, {from: accounts[1]}))
+      await assertRevert(wallet.transfer(exampleToken.address, accounts[8], 100, {from: accounts[1]}))
     })
   })
 })

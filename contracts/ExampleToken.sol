@@ -56,5 +56,6 @@ contract ExampleToken {
     require(balances[msg.sender] >= _value);
     balances[msg.sender] -= _value;
     balances[_to] += _value;
+    return true;
   }
 }
