@@ -39,26 +39,6 @@ contract('RecoveryWallet', (accounts) => {
     wallet = await RecoveryWallet.new(accounts.slice(2,5), accounts[1], 2)
   })
 
-  describe('#transfer', () => {
-    it('should revert if the owner tries to transfer more than the wallet has', async () => {
-      await assertRevert(wallet.transferCelo(accounts[2], 100, {from: accounts[1]}))
-    })
-
-    it('should transfer if the owner asks it it', async () => {
-      await wallet.send("100000")
-      await assertBalance(wallet.address, "100000")
-      await wallet.transferCelo(otherAccount.address, "40000", {from: accounts[1]})
-      await assertBalance(wallet.address, "60000")
-      await assertBalance(otherAccount.address, "40000")
-    })
-
-    it('should revert if someonelse else asks it it', async () => {
-      await wallet.send("100000")
-      await assertBalance(wallet.address, "100000")
-      await assertRevert(wallet.transferCelo(otherAccount.address, "40000", {from: accounts[2]}))
-    })
-  })
-
   describe('#setOwner', () => {
     it('should be proposable, votable, executable, and should work', async () => {
       await wallet.proposeSetOwner(accounts[8], {from: accounts[1]})
@@ -74,8 +54,10 @@ contract('RecoveryWallet', (accounts) => {
 
   describe('#tokens', () => {
     let exampleToken;
+    let tokenAddr;
     beforeEach(async () => {
       exampleToken = await ExampleToken.new();
+      tokenAddr = exampleToken.address;
       await exampleToken.mint(100, {from: accounts[0]});
     })
 
@@ -92,15 +74,15 @@ contract('RecoveryWallet', (accounts) => {
       assert(tokenInfo.limit.toNumber() == 30);
     })
 
-    it('can be sent', async () => {
+    it('can be transferred', async () => {
       await addTheToken();
       await exampleToken.transfer(wallet.address, 90, {from: accounts[0]});
-      assert((await exampleToken.balanceOf(wallet.address)).toNumber() == 90)
-      await wallet.transferToken(exampleToken.address, accounts[8], 10, {from: accounts[1]})
-      assert((await exampleToken.balanceOf(wallet.address)).toNumber() == 80)
+      assert((await wallet.balance(tokenAddr)).toNumber() == 90)
+      await wallet.transfer(exampleToken.address, accounts[8], 10, {from: accounts[1]})
+      assert((await wallet.balance(tokenAddr)).toNumber() == 80)
       assert((await exampleToken.balanceOf(accounts[8])).toNumber() == 10)
       // not enough funds, so will revert
-      await assertRevert(wallet.transferToken(exampleToken.address, accounts[8], 90, {from: accounts[1]}))
+      await assertRevert(wallet.transfer(exampleToken.address, accounts[8], 90, {from: accounts[1]}))
     })
   })
 })

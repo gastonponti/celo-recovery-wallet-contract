@@ -2,6 +2,7 @@ pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
+import "../node_modules/openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 
 
 contract RecoveryWallet {
@@ -99,22 +100,12 @@ contract RecoveryWallet {
         }
     }
 
-    function transferCelo(address payable _to, uint256 _amount) external onlyOwner {
-        if (address(this).balance < _amount) {
-            revert();
-        }
-        _to.transfer(_amount);
+    function transfer(address _tokenAddr, address _to, uint256 _amount) external onlyOwner {
+        IERC20(_tokenAddr).transfer(_to, _amount);
     }
 
-    function transferToken(address _tokenAddr, address _to, uint256 _amount) external onlyOwner {
-        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", _to, _amount);
-        _tokenAddr.call(data);
-    }
-
-    fallback () external payable {}
-
-    function getBalance() public view returns (uint256 res) {
-        return address(this).balance;
+    function balance(address _tokenAddr) public view returns (uint256 res) {
+        return IERC20(_tokenAddr).balanceOf(address(this));
     }
 
     function propose(address _target, uint256 _value, bytes calldata _data) external onlyWallet returns (uint256) {
