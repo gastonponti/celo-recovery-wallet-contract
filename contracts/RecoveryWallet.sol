@@ -199,7 +199,7 @@ contract RecoveryWallet is UsedPrecompiles {
     function proposeSetOwner(address _newOwner) external onlyOwnerOrAdmin {
         bytes memory data = abi.encodeWithSignature("setOwner(address)", _newOwner);
         uint256 id = this.propose(address(this), 0, data);
-        emit SetOwnerProposed(id, msg.sender);
+        emit SetOwnerProposed(id, _newOwner);
     }
 
     function setOwner(address _newOwner) public onlyWallet {
