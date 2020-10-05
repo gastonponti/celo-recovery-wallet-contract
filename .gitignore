@@ -3,6 +3,7 @@ i# Expo
 .expo/
 
 build/
+dist/
 
 # Python
 #
