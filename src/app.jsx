@@ -44,6 +44,7 @@ class App extends React.Component {
             admins: [],
             owner: "",
             newOwnerProposals: [],
+            ready: false,
         }
     }
 
@@ -54,6 +55,7 @@ class App extends React.Component {
         wallet.events.Vote((err, ev) => this.handleVote(err, ev));
         wallet.events.NewOwner((err, ev) => this.handleNewOwner(err, ev));
         wallet.events.Executed((err, ev) => this.handleExecuted(err, ev));
+        this.setState({ready: true});
     }
 
     handleSetOwnerProposed(err, ev) {
@@ -122,9 +124,10 @@ class App extends React.Component {
 
 
     render() {
-        return (
+        return (this.state.ready &&
             <div>
                 <h1>Recovery Wallet</h1>
+                <div><b>Contract address</b>: {wallet._address}</div>
                 {this.renderTruffleAccounts()}
                 {this.renderWalletInfo()}
                 <NewOwnerProposer proposeSetOwner={(i) => this.proposeSetOwner(i)}/>
