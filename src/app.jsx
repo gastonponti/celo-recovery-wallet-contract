@@ -52,6 +52,7 @@ class App extends React.Component {
         await this.reload();
         wallet.events.SetOwnerProposed((err, ev) => this.handleSetOwnerProposed(err, ev));
         wallet.events.Vote((err, ev) => this.handleVote(err, ev));
+        wallet.events.NewOwner((err, ev) => this.handleNewOwner(err, ev));
     }
 
     handleSetOwnerProposed(err, ev) {
@@ -85,6 +86,14 @@ class App extends React.Component {
         this.setState({newOwnerProposals: this.state.newOwnerProposals})
     }
 
+    handleNewOwner(err, ev) {
+        const owner = ev.returnValues.owner;
+        console.log(`Got new owner: ${owner}`)
+        this.setState({
+            owner,
+        })
+    }
+
     async reload() {
         const admins = await wallet.methods.getAdmins().call();
         const owner = await wallet.methods.owner().call();
@@ -114,7 +123,7 @@ class App extends React.Component {
     renderWalletInfo() {
         return (
         <div>
-            <p>Owner: {accountNums[this.state.owner]}</p>
+            <p>Owner: {accountNums[this.state.owner]} ({this.state.owner})</p>
             <p>Admins: {JSON.stringify(this.state.admins.map(x => accountNums[x]))}</p>
         </div>)
     }
