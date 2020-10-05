@@ -51,6 +51,7 @@ class App extends React.Component {
         await ready;
         await this.reload();
         wallet.events.SetOwnerProposed((err, ev) => this.handleSetOwnerProposed(err, ev));
+        wallet.events.Vote((err, ev) => this.handleVote(err, ev));
     }
 
     handleSetOwnerProposed(err, ev) {
@@ -60,10 +61,28 @@ class App extends React.Component {
             newOwnerProposals: [...this.state.newOwnerProposals, {
                 id: data[0],
                 address: data[1],
+                approvals: [],
                 approved: false,
                 executed: false,
             }]
         });
+    }
+
+    handleVote(err, ev) {
+        const id = ev.returnValues.proposalId;
+        const approver = ev.returnValues.admin;
+        console.log(`Proposal ${id} approved by ${approver} ${accountNums[approver]}`);
+        for (const proposal of this.state.newOwnerProposals) {
+            if (proposal.id === id) {
+                if (!proposal.approvals.includes(approver)) {
+                    proposal.approvals.push(approver);
+                    if (proposal.approvals.length >= 2) {
+                        proposal.approved = true;
+                    }
+                }
+            }
+        }
+        this.setState({newOwnerProposals: this.state.newOwnerProposals})
     }
 
     async reload() {
@@ -108,7 +127,7 @@ class App extends React.Component {
         return (
             <div>
             <h3>New Owner Proposals</h3>
-            <table>
+            <table border="1">
                 <tr>
                     <th>Proposal id</th>
                     <th>Status</th>
@@ -128,7 +147,13 @@ class App extends React.Component {
 
     renderProposal(proposal) {
         const approveCells = [1, 2, 3, 4, 5].map(i => {
-            return <td key={i}>{!proposal.approved && <Button onClick={() => this.approve(proposal, i)}>Approve</Button>}</td>
+            const approved = proposal.approvals.includes(accounts[i]);
+            const isAdmin = this.state.admins.includes(accounts[i])
+            return <td key={i}>
+                {isAdmin && !proposal.executed && !approved && <Button onClick={() => this.approve(proposal, i)}>Approve</Button>}
+                {approved && "Approved"}
+                {!isAdmin && "N/A"}
+                </td>
         })
         return <tr>
             <td>{proposal.id}</td>
@@ -149,7 +174,7 @@ class App extends React.Component {
 
     proposeSetOwner(i) {
         console.log(`Proposing account ${i}: ${accounts[i]}`)
-        wallet.methods.proposeSetOwner(accounts[i]).send({from: this.state.owner, gas: 500000});
+        wallet.methods.proposeSetOwner(accounts[i]).send({from: accounts[2], gas: 500000});
     }
 }
 
