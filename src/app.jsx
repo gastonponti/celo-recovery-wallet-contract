@@ -126,7 +126,7 @@ class App extends React.Component {
     render() {
         return (this.state.ready &&
             <div>
-                <h1>Recovery Wallet</h1>
+                <h1>Hackathon demo: proposals, voting, and execution (using Ganache)</h1>
                 <div><b>Contract address</b>: {wallet._address}</div>
                 {this.renderTruffleAccounts()}
                 {this.renderWalletInfo()}
@@ -149,7 +149,7 @@ class App extends React.Component {
         return (
         <div>
             <p><b>Owner</b>: {accountNums[this.state.owner]} ({this.state.owner})</p>
-            <p><b>Admins</b>: {JSON.stringify(this.state.admins.map(x => accountNums[x]))}</p>
+            <p><b>Admins</b>: {JSON.stringify(this.state.admins.map(x => accountNums[x]))} (2-of-3 required to approve a proposal)</p>
         </div>)
     }
 
