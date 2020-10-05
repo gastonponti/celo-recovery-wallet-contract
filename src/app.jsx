@@ -148,7 +148,7 @@ class App extends React.Component {
     renderWalletInfo() {
         return (
         <div>
-            <p><b>Owner</b>: {accountNums[this.state.owner]} ({this.state.owner})</p>
+            <p><b>Spender</b>: {accountNums[this.state.owner]} ({this.state.owner})</p>
             <p><b>Admins</b>: {JSON.stringify(this.state.admins.map(x => accountNums[x]))} (2-of-3 required to approve a proposal)</p>
         </div>)
     }
