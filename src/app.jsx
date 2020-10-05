@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 const Web3 = require("web3")
 const web3 = new Web3("ws://127.0.0.1:8545")
-import {Input} from "reactstrap"
+import {Input, Col, Row, Button} from "reactstrap"
 
 
 const walletJson = require('../build/contracts/RecoveryWallet.json');
@@ -57,7 +57,12 @@ class App extends React.Component {
         const data = ev.returnValues;
         console.log(`Got new owner proposal: ${JSON.stringify(data)}`)
         this.setState({
-            newOwnerProposals: [...this.state.newOwnerProposals, {id: data[0], address: data[1]}]
+            newOwnerProposals: [...this.state.newOwnerProposals, {
+                id: data[0],
+                address: data[1],
+                approved: false,
+                executed: false,
+            }]
         });
     }
 
@@ -96,13 +101,50 @@ class App extends React.Component {
     }
 
     renderNewOwnerProposals() {
+
         const rows = this.state.newOwnerProposals.map(proposal => {
             return <div key={proposal.id}>#{proposal.id}: proposes {proposal.address} (account {accountNums[proposal.address]})</div>
         })
-        return <div>
+        return (
+            <div>
             <h3>New Owner Proposals</h3>
-            {rows}
-        </div>
+            <table>
+                <tr>
+                    <th>Proposal id</th>
+                    <th>Status</th>
+                    <th>Proposed owner</th>
+                    <th>1</th>
+                    <th>2</th>
+                    <th>3</th>
+                    <th>4</th>
+                    <th>5</th>
+                    <th>Execute</th>
+                </tr>
+                {this.state.newOwnerProposals.map(p => this.renderProposal(p))}
+            </table>
+            </div>
+        )
+    }
+
+    renderProposal(proposal) {
+        const approveCells = [1, 2, 3, 4, 5].map(i => {
+            return <td key={i}>{!proposal.approved && <Button onClick={() => this.approve(proposal, i)}>Approve</Button>}</td>
+        })
+        return <tr>
+            <td>{proposal.id}</td>
+            <td>{proposal.executed ? "Executed" : (proposal.approved ? "Approved" : "Pending")}</td>
+            <td>{proposal.address} (account {accountNums[proposal.address]})</td>
+            {approveCells}
+    <td>{proposal.approved && !proposal.executed && <Button onClick={() => this.execute(proposal)}>Execute</Button>}</td>
+        </tr>
+    }
+
+    approve(proposal, account) {
+        wallet.methods.vote(proposal.id, true).send({from: accounts[account]})
+    }
+
+    execute(proposal) {
+        wallet.methods.execute(proposal.id).send({from: accounts[2]})
     }
 
     proposeSetOwner(i) {
@@ -126,7 +168,7 @@ class NewOwnerProposer extends React.Component {
                 <Input type="select" onChange={(ev) => this.setState({i: ev.target.value})} value={this.state.i}>
                     {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <option value={i}>{i}</option>)}
                 </Input>
-                <button onClick={() => this.props.proposeSetOwner(this.state.i)}>Submit</button>
+                <Button onClick={() => this.props.proposeSetOwner(this.state.i)}>Submit</Button>
             </div>
         )
     }
