@@ -162,21 +162,21 @@ contract RecoveryWallet is UsedPrecompiles {
     }
 
     function vote(uint256 id, bool approve) external onlyAdmin {
-        require(proposals[id].executed, "The proposal was already executed");
+        require(!proposals[id].executed, "The proposal was already executed");
         require(id >= proposalsValidFromId, "Not a valid proposal anymore. An admin change proposal was invoked in between");
         require(id < proposalCounter, "Cannot vote for future proposals");
-        
+
         if (approve) {
             proposals[id].votes.add(msg.sender);
         } else {
             proposals[id].votes.remove(msg.sender);
         }
-        
+
         emit Vote(id, approve, msg.sender);
     }
 
     function execute(uint256 _id) external onlyOwnerOrAdmin {
-        require(proposals[_id].executed, "Proposal already executed");
+        require(!proposals[_id].executed, "Proposal already executed");
         require(_id >= proposalsValidFromId, "Not a valid proposal anymore. An admin change proposal was invoked in between");
         require(proposals[_id].votes.length() >= quorum, "The proposal hasn't reached a quorum of admins, so it cannot be executed");
         proposals[_id].executed = true;
@@ -234,7 +234,7 @@ contract RecoveryWallet is UsedPrecompiles {
     function addAdmin(address newAdmin) public onlyOwner {
         // this shouldn't happen because it's checked when the proposal was created
         require(newAdmin != address(0), "Invalid Address");
-        require(admins.add(newAdmin), "The user was already an admin"); 
+        require(admins.add(newAdmin), "The user was already an admin");
         proposalsValidFromId = proposalCounter;
         emit AdminAdded(newAdmin);
     }
@@ -250,7 +250,7 @@ contract RecoveryWallet is UsedPrecompiles {
     function removeAdmin(address admin) public onlyWallet {
         // this shouldn't happen because it's checked when the proposal was created
         require(admins.length().sub(1) >= quorum, "Will left the contract without quorum");
-        require(admins.remove(admin), "The user was not an admin"); 
+        require(admins.remove(admin), "The user was not an admin");
         proposalsValidFromId = proposalCounter;
         emit AdminRemoved(admin);
     }
@@ -270,7 +270,7 @@ contract RecoveryWallet is UsedPrecompiles {
         require(newAdmin != address(0), "Invalid Address");
         require(newAdmin != oldAdmin, "Unnecessary change, same address");
         require(admins.remove(oldAdmin), "The user to removed is not an admin");
-        require(!admins.add(newAdmin), "The user was already an admin"); 
+        require(!admins.add(newAdmin), "The user was already an admin");
         proposalsValidFromId = proposalCounter;
         emit AdminRemoved(oldAdmin);
         emit AdminAdded(newAdmin);
@@ -300,13 +300,13 @@ contract RecoveryWallet is UsedPrecompiles {
     }
 
     function increaseTokenLimit(address _addr, uint256 _limit) public onlyWallet {
-        require(tokens[_addr].limit < _limit, "no need to use a proposal to decrease the limit"); 
+        require(tokens[_addr].limit < _limit, "no need to use a proposal to decrease the limit");
         tokens[_addr].limit = _limit;
         emit LimitTokenChanged(_addr, _limit);
     }
 
     function decreaseTokenLimit(address _addr, uint256 _limit) public onlyOwner {
-        require(tokens[_addr].limit > _limit, "use a proposal to increase the limit"); 
+        require(tokens[_addr].limit > _limit, "use a proposal to increase the limit");
         tokens[_addr].limit = _limit;
         emit LimitTokenChanged(_addr, _limit);
     }
