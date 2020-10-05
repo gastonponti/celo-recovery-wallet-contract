@@ -53,6 +53,7 @@ class App extends React.Component {
         wallet.events.SetOwnerProposed((err, ev) => this.handleSetOwnerProposed(err, ev));
         wallet.events.Vote((err, ev) => this.handleVote(err, ev));
         wallet.events.NewOwner((err, ev) => this.handleNewOwner(err, ev));
+        wallet.events.Executed((err, ev) => this.handleExecuted(err, ev));
     }
 
     handleSetOwnerProposed(err, ev) {
@@ -92,6 +93,17 @@ class App extends React.Component {
         this.setState({
             owner,
         })
+    }
+
+    handleExecuted(err, ev) {
+        const id = ev.returnValues.proposalId;
+        console.log(`Proposal ${id} was executed`)
+        for (const proposal of this.state.newOwnerProposals) {
+            if (proposal.id === id) {
+                proposal.executed = true;
+            }
+        }
+        this.setState({newOwnerProposals: this.state.newOwnerProposals})
     }
 
     async reload() {
@@ -162,6 +174,7 @@ class App extends React.Component {
                 {isAdmin && !proposal.executed && !approved && <Button onClick={() => this.approve(proposal, i)}>Approve</Button>}
                 {approved && "Approved"}
                 {!isAdmin && "N/A"}
+                {proposal.executed && isAdmin && !approved && "Didn't vote"}
                 </td>
         })
         return <tr>

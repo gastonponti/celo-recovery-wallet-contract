@@ -194,6 +194,7 @@ contract RecoveryWallet is UsedPrecompiles {
         if (!success) {
             revert("Proposal execution reverted");
         }
+        emit Executed(_id);
     }
 
     function proposeSetOwner(address _newOwner) external onlyOwnerOrAdmin {
