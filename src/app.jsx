@@ -125,6 +125,7 @@ class App extends React.Component {
         return (
             <div>
                 <h1>Recovery Wallet</h1>
+                {this.renderTruffleAccounts()}
                 {this.renderWalletInfo()}
                 <NewOwnerProposer proposeSetOwner={(i) => this.proposeSetOwner(i)}/>
                 {this.renderNewOwnerProposals()}
@@ -132,11 +133,20 @@ class App extends React.Component {
         )
     }
 
+    renderTruffleAccounts() {
+        return <div>
+            <h3>Truffle accounts:</h3>
+            {accounts && [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i =>
+                <div key={i}>#{i}: {accounts[i]}</div>
+            )}
+        </div>
+    }
+
     renderWalletInfo() {
         return (
         <div>
-            <p>Owner: {accountNums[this.state.owner]} ({this.state.owner})</p>
-            <p>Admins: {JSON.stringify(this.state.admins.map(x => accountNums[x]))}</p>
+            <p><b>Owner</b>: {accountNums[this.state.owner]} ({this.state.owner})</p>
+            <p><b>Admins</b>: {JSON.stringify(this.state.admins.map(x => accountNums[x]))}</p>
         </div>)
     }
 
