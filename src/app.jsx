@@ -60,7 +60,7 @@ class App extends React.Component {
 
     handleSetOwnerProposed(err, ev) {
         const data = ev.returnValues;
-        console.log(`Got new owner proposal: ${JSON.stringify(data)}`)
+        console.log(`Got new spender proposal: ${JSON.stringify(data)}`)
         this.setState({
             newOwnerProposals: [...this.state.newOwnerProposals, {
                 id: data[0],
@@ -91,7 +91,7 @@ class App extends React.Component {
 
     handleNewOwner(err, ev) {
         const owner = ev.returnValues.owner;
-        console.log(`Got new owner: ${owner}`)
+        console.log(`Got new spender: ${owner}`)
         this.setState({
             owner,
         })
@@ -160,12 +160,12 @@ class App extends React.Component {
         })
         return (
             <div>
-            <h3>New Owner Proposals</h3>
+            <h3>New Spender Proposals</h3>
             <table border="1">
                 <tr>
                     <th>Proposal id</th>
                     <th>Status</th>
-                    <th>Proposed owner</th>
+                    <th>Proposed spender</th>
                     <th>1</th>
                     <th>2</th>
                     <th>3</th>
@@ -224,7 +224,7 @@ class NewOwnerProposer extends React.Component {
     render() {
         return (
             <div>
-                Select a new owner to propose:
+                Select an account to propose as the new spender:
                 <Input type="select" onChange={(ev) => this.setState({i: ev.target.value})} value={this.state.i}>
                     {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => <option value={i}>{i}</option>)}
                 </Input>
