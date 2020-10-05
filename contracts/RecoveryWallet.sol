@@ -147,6 +147,16 @@ contract RecoveryWallet is UsedPrecompiles {
         return IERC20(_tokenAddr).balanceOf(address(this));
     }
 
+    function getAdmins() public view returns (address[] memory) {
+        uint256 num = admins.length();
+        address[] memory res = new address[](num);
+        for (uint256 i = 0; i < num; i = i.add(1)) {
+            res[i] = admins.get(i);
+        }
+        return res;
+
+    }
+
     function propose(address _target, uint256 _value, bytes calldata _data) external onlyWallet returns (uint256) {
         require(_target != address(0), "Invalid proposal target");
         uint256 id = proposalCounter;

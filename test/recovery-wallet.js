@@ -64,6 +64,16 @@ contract('RecoveryWallet', (accounts) => {
     })
   })
 
+  describe('#getAdmins', () => {
+    it('gives an array with the admins', async () => {
+      const admins = await wallet.getAdmins();
+      assert(admins.length === 3);
+      assert(admins.includes(accounts[2]))
+      assert(admins.includes(accounts[3]))
+      assert(admins.includes(accounts[4]))
+    })
+  })
+
   describe('#invoke', () => {
     it("should revert if the underlying transaction reverts", async () => {
       const badCallData = web3.eth.abi.encodeFunctionCall({
