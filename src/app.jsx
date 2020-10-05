@@ -9,9 +9,13 @@ const tokenJson = require('../build/contracts/ExampleToken.json');
 let wallet = new web3.eth.Contract(walletJson['abi']);
 let token = new web3.eth.Contract(tokenJson['abi']);
 let accounts
+const accountNums = {}
 
 async function setup() {
     accounts = await web3.eth.getAccounts();
+    for (let i = 0; i < 10; i++) {
+        accountNums[accounts[i]] = i;
+    }
     await deployWallet();
     await deployToken();
     window.contracts = {wallet, token, accounts}
@@ -30,13 +34,47 @@ async function deployToken() {
     await token.methods.mint(100).send({from: accounts[0]});
 }
 
-setup()
+const ready = setup()
+
 
 class App extends React.Component {
+    constructor(args) {
+        super(args)
+        this.state = {
+            admins: [],
+            owner: "",
+        }
+    }
+
+    async componentDidMount() {
+        await ready;
+        await this.reload();
+    }
+
+    async reload() {
+        const admins = await wallet.methods.getAdmins().call();
+        const owner = await wallet.methods.owner().call();
+        this.setState({
+            admins,
+            owner,
+        })
+    }
+
+
+    ready() {
+        return !!(wallet._address && token._address);
+    }
 
 
     render() {
-        return <h1>Hello there</h1>
+
+        return (
+            <div>
+                <h1>Recovery Wallet</h1>
+                <p>Owner: {accountNums[this.state.owner]}</p>
+                <p>Admins: {JSON.stringify(this.state.admins.map(x => accountNums[x]))}</p>
+            </div>
+        )
     }
 }
 
