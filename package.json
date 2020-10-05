@@ -17,7 +17,7 @@
   "dependencies": {
     "@celo/contractkit": "0.4.14",
     "@celo/utils": "0.1.20",
-    "ganache-cli": "^6.11.0",
+    "@celo/ganache-cli": "^6.6.0",
     "mocha": "^5.1.1",
     "openzeppelin-solidity": "^2.5.1",
     "solhint": "^3.2.1",
