@@ -30,7 +30,7 @@ contract('RecoveryWallet', (accounts) => {
   }
 
   async function addTheToken() {
-    await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
+    await wallet.proposeIncreaseTokenLimit(exampleToken.address, 30, {from: accounts[1]})
     await wallet.vote(1, true, {from: accounts[2]})
     await wallet.vote(1, true, {from: accounts[3]})
     await wallet.execute(1, {from: accounts[3]})
@@ -88,7 +88,7 @@ contract('RecoveryWallet', (accounts) => {
     it('can be added', async () => {
       await addTheToken()
       const tokenInfo = await wallet.tokens(exampleToken.address)
-      assert(tokenInfo.limit.toNumber() == 30);
+      assert(tokenInfo.toNumber() == 30);
     })
 
     it('can be transferred', async () => {
@@ -105,7 +105,7 @@ contract('RecoveryWallet', (accounts) => {
 
   describe('#proposals', () => {
     it('support changing your vote', async () => {
-      await wallet.proposeAddToken(exampleToken.address, 30, {from: accounts[1]})
+      await wallet.proposeIncreaseTokenLimit(exampleToken.address, 30, {from: accounts[1]})
       await wallet.vote(1, true, {from: accounts[2]})
       await wallet.vote(1, true, {from: accounts[3]})
       await wallet.vote(1, false, {from: accounts[3]})
