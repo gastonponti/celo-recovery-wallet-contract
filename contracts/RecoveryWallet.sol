@@ -63,7 +63,7 @@ contract RecoveryWallet is UsedPrecompiles {
     uint256 public proposalsValidFromId;
     mapping(uint256 => Proposal) private proposals;
 
-    mapping(address => Token) public tokens;
+    mapping(address => Token) private tokens;
 
     // modifiers
     modifier onlyOwner {
@@ -132,29 +132,40 @@ contract RecoveryWallet is UsedPrecompiles {
         emit NewOwner(owner);
     }
 
-    function transfer(address _tokenAddr, address _to, uint256 _amount) external notLocked onlyOwner returns (bool) {
+    function transfer(address tokenAddr, address to, uint256 amount) external notLocked onlyOwner returns (bool) {
         // This is in a different required, because it could happen that the used token is bigger that the limit set
         // if in the same epoch the limit was decreased by the user. If we left only the "limit.sub(used)" require
         // the error showned to the user will be an overflow and not a "limit reached"
         uint256 epoch = getEpochNumber();
-        require(tokens[_tokenAddr].limit >= tokens[_tokenAddr].usedInEpoch[epoch], "limit reached");
-        require(tokens[_tokenAddr].limit.sub(tokens[_tokenAddr].usedInEpoch[epoch]) >= _amount, "limit reached");
-        tokens[_tokenAddr].usedInEpoch[epoch] = tokens[_tokenAddr].usedInEpoch[epoch].add(_amount);
-        return IERC20(_tokenAddr).transfer(_to, _amount);
+        require(tokens[tokenAddr].limit >= tokens[tokenAddr].usedInEpoch[epoch], "limit reached");
+        require(tokens[tokenAddr].limit.sub(tokens[tokenAddr].usedInEpoch[epoch]) >= amount, "limit reached");
+        tokens[tokenAddr].usedInEpoch[epoch] = tokens[tokenAddr].usedInEpoch[epoch].add(amount);
+        return IERC20(tokenAddr).transfer(to, amount);
     }
 
-    function balance(address _tokenAddr) public view returns (uint256) {
-        return IERC20(_tokenAddr).balanceOf(address(this));
+    function balance(address tokenAddr) public view returns (uint256) {
+        return IERC20(tokenAddr).balanceOf(address(this));
     }
 
-    function getAdmins() public view returns (address[] memory) {
-        uint256 num = admins.length();
-        address[] memory res = new address[](num);
-        for (uint256 i = 0; i < num; i = i.add(1)) {
-            res[i] = admins.get(i);
+    function unspentTokensInEpoch(address tokenAddr, uint256 _epoch) public view returns (uint256) {
+        // The limit could be reduced after consuming the daily tokens
+        uint256 unspent = 0;
+        if (tokens[tokenAddr].limit > tokens[tokenAddr].usedInEpoch[_epoch]) {
+            unspent = tokens[tokenAddr].limit.sub(tokens[tokenAddr].usedInEpoch[_epoch]);
         }
-        return res;
+        return unspent;
+    }
 
+    function tokenLimit(address tokenAddr) public view returns (uint256) {
+        return tokens[tokenAddr].limit;
+    }
+
+    function getAdminsLength() public view returns (uint256) {
+        return admins.length();
+    }
+
+    function getAdmin(uint256 index) public view returns (address) {
+        return admins.get(index);
     }
 
     function propose(address _target, uint256 _value, bytes calldata _data) external onlyWallet returns (uint256) {
